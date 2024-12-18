@@ -4,6 +4,21 @@ import { PencilSquareIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import useSWR from 'swr'
 
+interface JournalEntry {
+  id: number
+  mood: 'Happy' | 'Calm' | 'Sad' | 'Frustrated' | 'Tired'
+  entry: string
+  createdAt: string
+}
+
+const moodEmojis = {
+  'Happy': '😊',
+  'Calm': '😌',
+  'Sad': '😔',
+  'Frustrated': '😤',
+  'Tired': '😴'
+} as const
+
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 export default function Home() {
@@ -35,19 +50,13 @@ export default function Home() {
             </div>
           ) : (
             <div className="space-y-4">
-              {entries.map((entry: any) => (
+              {entries.map((entry: JournalEntry) => (
                 <div key={entry.id} className="bg-white rounded-lg shadow p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-2xl">{
-                        {
-                          'Happy': '😊',
-                          'Calm': '😌',
-                          'Sad': '😔',
-                          'Frustrated': '😤',
-                          'Tired': '😴',
-                        }[entry.mood] || '😐'
-                      }</span>
+                      <span className="text-2xl">
+                        {moodEmojis[entry.mood] || '🤔'}
+                      </span>
                       <span className="text-gray-600">{entry.mood}</span>
                     </div>
                     <time className="text-sm text-gray-500">

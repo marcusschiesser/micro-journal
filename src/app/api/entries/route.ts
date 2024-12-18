@@ -1,56 +1,36 @@
 import { NextResponse } from 'next/server'
-import { promises as fs } from 'fs'
-import path from 'path'
+import { getDb } from '@/lib/db'
 
-const dataFile = path.join(process.cwd(), 'data', 'entries.json')
-
-// Ensure data directory exists
-async function ensureDataDir() {
-  const dataDir = path.join(process.cwd(), 'data')
-  try {
-    await fs.access(dataDir)
-  } catch {
-    await fs.mkdir(dataDir)
-  }
-}
-
-// Initialize entries file if it doesn't exist
-async function initEntriesFile() {
-  try {
-    await fs.access(dataFile)
-  } catch {
-    await fs.writeFile(dataFile, JSON.stringify([]))
-  }
+interface JournalEntry {
+  id?: number
+  mood: string
+  entry: string
+  createdAt: string
 }
 
 export async function GET() {
-  await ensureDataDir()
-  await initEntriesFile()
-  
-  const data = await fs.readFile(dataFile, 'utf-8')
-  const entries = JSON.parse(data)
+  const db = getDb()
+  const entries = db.prepare('SELECT * FROM entries ORDER BY createdAt DESC').all()
   return NextResponse.json(entries)
 }
 
 export async function POST(request: Request) {
-  await ensureDataDir()
-  await initEntriesFile()
-
   const data = await request.json()
   const { mood, entry } = data
   
-  const newEntry = {
-    id: Date.now(),
+  const newEntry: JournalEntry = {
     mood,
     entry,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date().toISOString()
   }
 
-  const fileData = await fs.readFile(dataFile, 'utf-8')
-  const entries = JSON.parse(fileData)
-  entries.unshift(newEntry) // Add new entry at the beginning
+  const db = getDb()
+  const stmt = db.prepare(
+    'INSERT INTO entries (mood, entry, createdAt) VALUES (?, ?, ?)'
+  )
   
-  await fs.writeFile(dataFile, JSON.stringify(entries, null, 2))
-  
+  const result = stmt.run(newEntry.mood, newEntry.entry, newEntry.createdAt)
+  newEntry.id = Number(result.lastInsertRowid)
+
   return NextResponse.json(newEntry)
 }
