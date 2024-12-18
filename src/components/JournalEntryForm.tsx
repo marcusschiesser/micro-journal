@@ -23,8 +23,7 @@ export default function JournalEntryForm() {
   const router = useRouter()
   const [selectedMood, setSelectedMood] = useState('')
   const [entry, setEntry] = useState('')
-  
-  const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)]
+  const [prompt] = useState(prompts[Math.floor(Math.random() * prompts.length)])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,7 +55,7 @@ export default function JournalEntryForm() {
 
         <div className="space-y-4">
           <div>
-            <p className="text-gray-600 mb-2">Prompt: {randomPrompt}</p>
+            <p className="text-gray-600 mb-2">Prompt: {prompt}</p>
             <textarea
               value={entry}
               onChange={(e) => setEntry(e.target.value)}
