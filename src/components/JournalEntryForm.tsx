@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSWRConfig } from 'swr'
 import PromptSelector from './PromptSelector'
@@ -13,12 +13,50 @@ const moods = [
   { emoji: '😴', label: 'Tired' },
 ]
 
+const motivationalMessages = [
+  "You're doing great! Keep those thoughts flowing...",
+  "Every word counts. Your journey matters!",
+  "Take your time, express yourself freely.",
+  "Your reflection is valuable. Keep going!",
+  "Writing helps clear the mind. You've got this!",
+]
+
 export default function JournalEntryForm() {
   const router = useRouter()
   const { mutate } = useSWRConfig()
   const [selectedMood, setSelectedMood] = useState('')
   const [entry, setEntry] = useState('')
   const [selectedPrompt, setSelectedPrompt] = useState('')
+  const [showMotivation, setShowMotivation] = useState(false)
+  const [motivationalMessage, setMotivationalMessage] = useState('')
+  const typingTimeoutRef = useRef<NodeJS.Timeout>()
+
+  useEffect(() => {
+    const handleTypingPause = () => {
+      const randomIndex = Math.floor(Math.random() * motivationalMessages.length)
+      setMotivationalMessage(motivationalMessages[randomIndex])
+      setShowMotivation(true)
+      
+      // Hide the message after 5 seconds
+      setTimeout(() => {
+        setShowMotivation(false)
+      }, 5000)
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current)
+    }
+
+    if (entry) {
+      typingTimeoutRef.current = setTimeout(handleTypingPause, 3000) // Show message after 3 seconds of inactivity
+    }
+
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+      }
+    }
+  }, [entry])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -83,6 +121,11 @@ export default function JournalEntryForm() {
               className="w-full h-32 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder={selectedPrompt || "Write your thoughts here..."}
             />
+            {showMotivation && (
+              <div className="mt-2 text-blue-600 text-sm italic animate-fade-in">
+                {motivationalMessage}
+              </div>
+            )}
           </div>
         </div>
       </div>
