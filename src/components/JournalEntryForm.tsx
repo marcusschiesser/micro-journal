@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSWRConfig } from 'swr'
+import PromptSelector from './PromptSelector'
 
 const moods = [
   { emoji: '😊', label: 'Happy' },
@@ -12,20 +13,12 @@ const moods = [
   { emoji: '😴', label: 'Tired' },
 ]
 
-const prompts = [
-  'What made you smile today?',
-  'What\'s one thing you learned today?',
-  'What\'s something you\'re looking forward to?',
-  'What\'s one thing you\'re grateful for today?',
-  'What\'s a challenge you faced today?',
-]
-
 export default function JournalEntryForm() {
   const router = useRouter()
   const { mutate } = useSWRConfig()
   const [selectedMood, setSelectedMood] = useState('')
   const [entry, setEntry] = useState('')
-  const [prompt] = useState(prompts[Math.floor(Math.random() * prompts.length)])
+  const [selectedPrompt, setSelectedPrompt] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,6 +32,7 @@ export default function JournalEntryForm() {
         body: JSON.stringify({
           mood: selectedMood,
           entry,
+          prompt: selectedPrompt,
         }),
       })
 
@@ -79,12 +73,15 @@ export default function JournalEntryForm() {
 
         <div className="space-y-4">
           <div>
-            <p className="text-gray-600 mb-2">Prompt: {prompt}</p>
+            <h3 className="text-lg font-medium text-gray-800 mb-2">Choose a prompt:</h3>
+            <PromptSelector onPromptSelect={setSelectedPrompt} />
+          </div>
+          <div>
             <textarea
               value={entry}
               onChange={(e) => setEntry(e.target.value)}
               className="w-full h-32 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Write your thoughts here..."
+              placeholder={selectedPrompt || "Write your thoughts here..."}
             />
           </div>
         </div>
@@ -93,6 +90,7 @@ export default function JournalEntryForm() {
       <button
         type="submit"
         className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+        disabled={!selectedMood || !entry || !selectedPrompt}
       >
         Save Entry
       </button>
