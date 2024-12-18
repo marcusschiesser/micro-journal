@@ -13,14 +13,6 @@ const moods = [
   { emoji: '😴', label: 'Tired' },
 ]
 
-const motivationalMessages = [
-  "You're doing great! Keep those thoughts flowing...",
-  "Every word counts. Your journey matters!",
-  "Take your time, express yourself freely.",
-  "Your reflection is valuable. Keep going!",
-  "Writing helps clear the mind. You've got this!",
-]
-
 export default function JournalEntryForm() {
   const router = useRouter()
   const { mutate } = useSWRConfig()
@@ -30,25 +22,48 @@ export default function JournalEntryForm() {
   const [showMotivation, setShowMotivation] = useState(false)
   const [motivationalMessage, setMotivationalMessage] = useState('')
   const typingTimeoutRef = useRef<NodeJS.Timeout>()
+  const [isLoadingMessage, setIsLoadingMessage] = useState(false)
 
   useEffect(() => {
-    const handleTypingPause = () => {
-      const randomIndex = Math.floor(Math.random() * motivationalMessages.length)
-      setMotivationalMessage(motivationalMessages[randomIndex])
-      setShowMotivation(true)
-      
-      // Hide the message after 5 seconds
-      setTimeout(() => {
+    const generateMotivation = async (text: string) => {
+      try {
+        setIsLoadingMessage(true)
+        const response = await fetch('/api/motivation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to generate motivation')
+        }
+
+        const data = await response.json()
+        setMotivationalMessage(data.message)
+        setShowMotivation(true)
+        
+        // Hide the message after 8 seconds
+        setTimeout(() => {
+          setShowMotivation(false)
+        }, 8000)
+      } catch (error) {
+        console.error('Error getting motivation:', error)
         setShowMotivation(false)
-      }, 5000)
+      } finally {
+        setIsLoadingMessage(false)
+      }
     }
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current)
     }
 
-    if (entry) {
-      typingTimeoutRef.current = setTimeout(handleTypingPause, 3000) // Show message after 3 seconds of inactivity
+    if (entry && entry.length > 10) {
+      typingTimeoutRef.current = setTimeout(() => {
+        generateMotivation(entry)
+      }, 3000) // Generate message after 3 seconds of inactivity
     }
 
     return () => {
@@ -122,8 +137,18 @@ export default function JournalEntryForm() {
               placeholder={selectedPrompt || "Write your thoughts here..."}
             />
             {showMotivation && (
-              <div className="mt-2 text-blue-600 text-sm italic animate-fade-in">
-                {motivationalMessage}
+              <div className="mt-2 text-blue-600 text-sm italic animate-fade-in flex items-center">
+                {isLoadingMessage ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Thinking of something witty...
+                  </span>
+                ) : (
+                  motivationalMessage
+                )}
               </div>
             )}
           </div>
