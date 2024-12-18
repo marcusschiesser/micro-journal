@@ -1,7 +1,16 @@
+'use client'
+
 import { PencilSquareIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
+import useSWR from 'swr'
+
+const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 export default function Home() {
+  const { data: entries = [], mutate } = useSWR('/api/entries', fetcher, {
+    refreshInterval: 1000, // Poll every second
+  })
+
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="text-center mb-12">
@@ -20,9 +29,36 @@ export default function Home() {
 
         <div className="mt-12 space-y-6">
           <h2 className="text-2xl font-semibold text-gray-800">Recent Entries</h2>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-gray-500 text-center">Your journal entries will appear here</p>
-          </div>
+          {entries.length === 0 ? (
+            <div className="bg-white rounded-lg shadow p-6">
+              <p className="text-gray-500 text-center">Your journal entries will appear here</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {entries.map((entry: any) => (
+                <div key={entry.id} className="bg-white rounded-lg shadow p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{
+                        {
+                          'Happy': '😊',
+                          'Calm': '😌',
+                          'Sad': '😔',
+                          'Frustrated': '😤',
+                          'Tired': '😴',
+                        }[entry.mood] || '😐'
+                      }</span>
+                      <span className="text-gray-600">{entry.mood}</span>
+                    </div>
+                    <time className="text-sm text-gray-500">
+                      {new Date(entry.createdAt).toLocaleDateString()}
+                    </time>
+                  </div>
+                  <p className="text-gray-800 whitespace-pre-wrap">{entry.entry}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

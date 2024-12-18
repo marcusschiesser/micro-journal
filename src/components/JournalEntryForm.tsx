@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSWRConfig } from 'swr'
 
 const moods = [
   { emoji: '😊', label: 'Happy' },
@@ -21,14 +22,37 @@ const prompts = [
 
 export default function JournalEntryForm() {
   const router = useRouter()
+  const { mutate } = useSWRConfig()
   const [selectedMood, setSelectedMood] = useState('')
   const [entry, setEntry] = useState('')
   const [prompt] = useState(prompts[Math.floor(Math.random() * prompts.length)])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Implement entry saving logic
-    router.push('/')
+    
+    try {
+      const response = await fetch('/api/entries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          mood: selectedMood,
+          entry,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save entry')
+      }
+
+      // Mutate the entries cache
+      await mutate('/api/entries')
+      router.push('/')
+    } catch (error) {
+      console.error('Error saving entry:', error)
+      // TODO: Show error message to user
+    }
   }
 
   return (
